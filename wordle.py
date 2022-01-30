@@ -14,7 +14,7 @@ class Wordle:
         """answerをセットする"""
         max_index = len(self.word_list)
         index = random.randrange(start=0, stop=max_index)
-        self.answer = self.word_list[index].upper()
+        self.answer = self.word_list[index]
 
     def is_word_in_word_list(self, word):
         """単語がword listの中に存在していたらTrue"""

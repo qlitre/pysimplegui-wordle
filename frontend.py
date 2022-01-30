@@ -6,41 +6,63 @@ import PySimpleGUI as sg
 class Widget:
     """widgetを定義"""
 
-    def __init__(self):
-        self.size_input_box = (4, 1)
-        self.size_keyboard_button = (4, 1)
-        self.size_active_row_mark = (4, 1)
-        self.size_window = (800, 500)
-        self.color_input = 'black'
-        self.color_input_background = 'white'
-        self.color_keyboard = ('#FFFFFF', '#283b5b')
-        self.window_title = 'PySimpleGui Wordle'
-        self.font_active_row_mark = ('', 10)
+    """スタイルをここにまとめる"""
+    # relief style
+    relief_size = (30, 1)
+    relief_font = ("Helvetica", 15)
+    relief_text = "PysimpleGUI Wordle!"
+
+    # input box style
+    input_box_color = 'black'
+    input_box_color_bg = 'white'
+    input_box_size = (4, 1)
+
+    # keyboard button style
+    keyboard_btn_size = (4, 1)
+    keyboard_btn_color = ('#FFFFFF', '#283b5b')
+
+    # active row mark style
+    active_row_mark_text = "●"
+    active_row_mark_size = (4, 1)
+    active_row_mark_font = ('', 10)
+
+    # window style
+    window_title = 'PySimpleGui Wordle'
+    window_size = (800, 500)
+
+    def widget_relief(self):
+        """リリーフ"""
+        return sg.T(self.relief_text,
+                    size=self.relief_size,
+                    justification='center',
+                    font=self.relief_font,
+                    relief=sg.RELIEF_RIDGE)
 
     def widget_active_row_mark(self, color: str, key: str):
         """現在の入力行を示すマーク"""
-        return sg.T('●',
-                    size=self.size_active_row_mark,
+        return sg.T(self.active_row_mark_text,
+                    size=self.active_row_mark_size,
                     text_color=color,
-                    font=self.font_active_row_mark,
+                    font=self.active_row_mark_font,
                     key=key)
 
     def widget_input_box(self, key: str, disabled: bool):
-        """input widget"""
+        """input box widget"""
         return sg.InputText('',
                             key=key,
-                            size=self.size_input_box,
+                            size=self.input_box_size,
                             disabled=disabled,
-                            text_color=self.color_input,
+                            text_color=self.input_box_color,
                             justification='c',
-                            background_color=self.color_input_background)
+                            background_color=self.input_box_color_bg,
+                            enable_events=True)
 
     def widget_keyboard_button(self, char: str, key: str):
         """キーボードボタンwidget"""
         return sg.Button(char,
                          key=key,
-                         size=self.size_keyboard_button,
-                         button_color=self.color_keyboard)
+                         size=self.keyboard_btn_size,
+                         button_color=self.keyboard_btn_color)
 
     @staticmethod
     def popup_does_not_exist(word: str):
@@ -105,12 +127,16 @@ class GuiFrontEnd(Widget):
 
     def layout(self):
         """レイアウトを返す"""
+
+        col_relief = sg.Column([[self.widget_relief()]], justification='c')
+
         col_control = sg.Column(layout=[[sg.Button('ENTER'),
                                          sg.Button('BACK'),
                                          sg.Button('PREV'),
                                          sg.Button('NEXT')]],
                                 justification='c')
-        layout = [[self.input_box_widgets()],
+        layout = [[col_relief],
+                  [self.input_box_widgets()],
                   [self.key_boards_widgets()],
                   [col_control]]
 
@@ -120,6 +146,6 @@ class GuiFrontEnd(Widget):
         """ウィンドウを返す"""
         window = sg.Window(title=self.window_title,
                            layout=self.layout(),
-                           size=self.size_window,
+                           size=self.window_size,
                            finalize=True)
         return window

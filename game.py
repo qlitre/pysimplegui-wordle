@@ -108,12 +108,12 @@ class Game:
         for key in self.get_input_widget_key():
             disabled = False if 'r1' in key else True
             self.window[key].update('',
-                                    text_color=self.frontend.color_input,
-                                    background_color=self.frontend.color_input_background,
+                                    text_color=self.frontend.input_box_color,
+                                    background_color=self.frontend.input_box_color_bg,
                                     disabled=disabled)
         # キーボードボタンを初期化
         for key in self.get_keyboard_key():
-            self.window[key].update(button_color=self.frontend.color_keyboard)
+            self.window[key].update(button_color=self.frontend.keyboard_btn_color)
 
         # リフレッシュ
         self.window.refresh()
@@ -131,12 +131,17 @@ class Game:
         # wordleに答えをセット
         self.wordle.set_answer()
         keyboards_events = list(self.get_keyboard_key())
+        input_box_event = list(self.get_input_widget_key())
 
         while True:
             event, values = self.window.read()
 
             if event == sg.WIN_CLOSED:
                 break
+
+            if event in input_box_event:
+                char = values[event]
+                self.window[event].update(char.upper())
 
             if event in keyboards_events:
                 focus_input = self.window.find_element_with_focus()

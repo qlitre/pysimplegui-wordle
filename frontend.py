@@ -6,7 +6,8 @@ import PySimpleGUI as sg
 class Widget:
     """widgetを定義"""
 
-    """スタイルをここにまとめる"""
+    """スタイル"""
+
     # relief style
     relief_size = (30, 1)
     relief_font = ("Helvetica", 15)
@@ -32,7 +33,7 @@ class Widget:
 
     def widget_relief(self):
         """リリーフ"""
-        return sg.T(self.relief_text,
+        return sg.T(text=self.relief_text,
                     size=self.relief_size,
                     justification='center',
                     font=self.relief_font,
@@ -40,7 +41,7 @@ class Widget:
 
     def widget_active_row_mark(self, color: str, key: str):
         """現在の入力行を示すマーク"""
-        return sg.T(self.active_row_mark_text,
+        return sg.T(text=self.active_row_mark_text,
                     size=self.active_row_mark_size,
                     text_color=color,
                     font=self.active_row_mark_font,
@@ -70,7 +71,7 @@ class Widget:
         sg.popup(f'Sorry, "{word}" does not exist in my word list')
 
     @staticmethod
-    def popup_game_over(answer):
+    def popup_game_over(answer: str):
         """ゲームオーバーpopup"""
         msg = f'Game Over!\nThe answer is {answer}\nDo it again?'
         return sg.popup_ok_cancel(msg)
@@ -92,38 +93,40 @@ class GuiFrontEnd(Widget):
 
     def input_box_widgets(self):
         """縦6 x 横5の入力マス"""
-        widgets = []
+        layout = []
 
-        for row_num in range(1, 7):
-            disabled = False if row_num == 1 else True
-            color_mark = 'green' if row_num == 1 else 'white'
-            active_row_mark = self.widget_active_row_mark(color=color_mark, key=f'row{row_num}')
+        for row in range(1, 7):
+            disabled = False if row == 1 else True
+            color_mark = 'green' if row == 1 else 'white'
+            active_row_mark = self.widget_active_row_mark(color=color_mark,
+                                                          key=f'row{row}')
 
-            row = [active_row_mark]
-            for col_num in range(1, 6):
+            widgets = [active_row_mark]
+            for col in range(1, 6):
                 # keyはr1c1形式で記入
-                key = f'r{row_num}c{col_num}'
+                key = f'r{row}c{col}'
                 widget = self.widget_input_box(key=key, disabled=disabled)
-                row.append(widget)
+                widgets.append(widget)
 
-            widgets.append(row)
-        widgets = sg.Column(layout=widgets, justification='c')
+            layout.append(widgets)
 
-        return widgets
+        layout = sg.Column(layout=layout, justification='c')
+
+        return layout
 
     def key_boards_widgets(self):
         """キーボードボタン"""
-        widgets = []
+        layout = []
         keyboards = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM']
         for chars in keyboards:
-            row = []
+            widgets = []
             for char in list(chars):
                 widget = self.widget_keyboard_button(char=char, key=char)
-                row.append(widget)
-            row = sg.Column(layout=[row], justification='c')
-            widgets.append([row])
+                widgets.append(widget)
+            widgets = sg.Column(layout=[widgets], justification='c')
+            layout.append([widgets])
 
-        return widgets
+        return layout
 
     def layout(self):
         """レイアウトを返す"""
@@ -133,7 +136,8 @@ class GuiFrontEnd(Widget):
         col_control = sg.Column(layout=[[sg.Button('ENTER'),
                                          sg.Button('BACK'),
                                          sg.Button('PREV'),
-                                         sg.Button('NEXT')]],
+                                         sg.Button('NEXT'),
+                                         sg.Button('CLEAR')]],
                                 justification='c')
         layout = [[col_relief],
                   [self.input_box_widgets()],

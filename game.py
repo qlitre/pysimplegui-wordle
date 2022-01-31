@@ -9,49 +9,12 @@ from frontend import GuiFrontEnd
 class Game:
     """ゲームの進行とロジック"""
 
-    def __init__(self, word_list):
+    def __init__(self, word_list: list):
         self.frontend = GuiFrontEnd()
         self.window = self.frontend.window()
         self.wordle = Wordle(word_list)
+        # 入力可能行の制御
         self.turn = 1
-
-    def get_row_by_turn(self, values: dict):
-        """ターンに応じて行のvaluesを取得"""
-        return dict(filter(lambda x: f'r{self.turn}' in x[0], values.items()))
-
-    def count_up_turn(self):
-        """ターンを一つ繰り上げる"""
-        self.turn += 1
-
-    @staticmethod
-    def build_word_by_5chars(row: dict):
-        """5文字の英単語を作成する"""
-        word = ''
-        for char in row.values():
-            word += char
-        return word
-
-    @staticmethod
-    def get_next_focus_input_key(key: str):
-        """次のフォーカスのキーを返す"""
-        row_num = int(key[1])
-        col_num = int(key[-1])
-        # 最後の場合は最初に戻る
-        if col_num == 5:
-            return f'r{row_num}c1'
-        else:
-            return f'r{row_num}c{col_num + 1}'
-
-    @staticmethod
-    def get_prev_focus_input_key(key: str):
-        """前のフォーカスのキーを返す"""
-        row_num = int(key[1])
-        col_num = int(key[-1])
-        # 最初の場合は最後に送る
-        if col_num == 1:
-            return f'r{row_num}c5'
-        else:
-            return f'r{row_num}c{col_num - 1}'
 
     @staticmethod
     def get_input_widget_key():
@@ -68,38 +31,90 @@ class Game:
         for c in chars:
             yield c
 
-    def update_active_row_mark_by_turn(self):
-        """現在入力中の行の表示を切りかえる"""
+    def filter_values_by_turn(self, values: dict):
+        """ターンに応じてvaluesをフィルタ"""
+        return dict(filter(lambda x: f'r{self.turn}' in x[0], values.items()))
+
+    def get_word_by_5chars(self, values: dict):
+        """5文字の英単語を作成する"""
+        row = self.filter_values_by_turn(values)
+        word = ''
+        for char in row.values():
+            word += char
+        return word
+
+    def set_focus_next(self, key: str):
+        """次のキーにフォーカスする"""
+        row_num = int(key[1])
+        col_num = int(key[-1])
+        # 最後の場合は最初に戻る
+        if col_num == 5:
+            next_key = f'r{row_num}c1'
+        else:
+            next_key = f'r{row_num}c{col_num + 1}'
+        self.window[next_key].SetFocus()
+
+    def set_focus_prev(self, key: str):
+        """前のフォーカスのキーを返す"""
+        row_num = int(key[1])
+        col_num = int(key[-1])
+        # 最初の場合は最後に送る
+        if col_num == 1:
+            prev_key = f'r{row_num}c5'
+        else:
+            prev_key = f'r{row_num}c{col_num - 1}'
+        self.window[prev_key].SetFocus()
+
+    def clear_row(self, values: dict):
+        """入力されている行をクリア"""
+        row = self.filter_values_by_turn(values)
+        for key in row.keys():
+            self.window[key].update('')
+
+        self.window[f'r{self.turn}c1'].SetFocus()
+
+    def update_active_row_mark_color(self):
+        """入力可能行表示マークの色をアップデート"""
         for row_num in range(1, 7):
             color = 'white'
-            # これから入力できる行
             if row_num == self.turn:
                 color = 'green'
-            # 入力済みの行
             elif row_num < self.turn:
                 color = 'gray'
             key = f'row{row_num}'
             self.window[key].update(text_color=color)
 
-    def update_widget(self, row: dict):
+    def update_widget_bg_color(self, values: dict):
+        """答えが入力された後のウィジェットの色を変える処理"""
+        row = self.filter_values_by_turn(values)
         for i, char in enumerate(row.values()):
-            row_num = self.turn
             col_num = i + 1
-            input_key = f'r{row_num}c{col_num}'
+            input_key = f'r{self.turn}c{col_num}'
             pos = i
-
-            if self.wordle.is_char_right_position(char, pos):
+            if self.wordle.is_char_right_position(char=char,
+                                                  pos=pos):
                 bg_color = 'green'
             elif self.wordle.is_char_in_answer(char):
                 bg_color = 'orange'
             else:
                 bg_color = 'gray'
 
-            # 既にgreenのものが上書きされないようにする
-            self.window[input_key].Update(text_color='white', background_color=bg_color)
+            self.window[input_key].Update(text_color='white',
+                                          background_color=bg_color)
+
+            # キーボードは既にgreenのものが上書きされないようにする
             c = self.window[char].ButtonColor
-            if c[1] != 'green':
+            if 'green' not in c:
                 self.window[char].Update(button_color=('white', bg_color))
+
+    def goto_next_turn(self, values: dict):
+        """次のターンに移行"""
+        self.turn = self.turn + 1
+        row = self.filter_values_by_turn(values)
+        self.update_active_row_mark_color()
+        for key in row.keys():
+            self.window[key].Update(disabled=False)
+        self.window[f'r{self.turn}c1'].set_focus()
 
     def refresh_game(self):
         """ゲームを初期化する"""
@@ -121,8 +136,8 @@ class Game:
         self.wordle.set_answer()
         # ターンを戻す
         self.turn = 1
-        # 入力可能行マークを最初に
-        self.update_active_row_mark_by_turn()
+        # 入力可能行マークを更新
+        self.update_active_row_mark_color()
         # フォーカスを一番最初に
         self.window['r1c1'].SetFocus()
 
@@ -139,54 +154,56 @@ class Game:
             if event == sg.WIN_CLOSED:
                 break
 
+            # inputボックスのフォーカスされているマス
+            focus_input = self.window.find_element_with_focus()
+
+            # 小文字で入力された場合、大文字に変換
             if event in input_box_event:
                 char = values[event]
                 self.window[event].update(char.upper())
 
             if event in keyboards_events:
-                focus_input = self.window.find_element_with_focus()
-                # 違うターンの場合は入力できない
+                # 違うターンのマスは入力できない
                 if f'r{self.turn}' not in focus_input.Key:
                     continue
 
-                if focus_input:
-                    focus_input.update(event)
-                    next_key = self.get_next_focus_input_key(focus_input.Key)
-                    self.window[next_key].SetFocus()
+                focus_input.update(event)
+                self.set_focus_next(key=focus_input.Key)
 
             # フォーカスされているマスを消去
             if event == 'BACK':
-                focus_input = self.window.find_element_with_focus()
                 focus_input.update('')
 
             # 前のマスに移動
             if event == 'PREV':
-                focus_input = self.window.find_element_with_focus()
-                prev_key = self.get_prev_focus_input_key(focus_input.Key)
-                self.window[prev_key].SetFocus()
+                self.set_focus_prev(key=focus_input.Key)
 
             # 次のマスに移動
             if event == 'NEXT':
-                focus_input = self.window.find_element_with_focus()
-                next_key = self.get_next_focus_input_key(focus_input.Key)
-                self.window[next_key].SetFocus()
+                self.set_focus_next(key=focus_input.Key)
+
+            # 入力されている行をクリア
+            if event == 'CLEAR':
+                self.clear_row(values)
 
             if event == 'ENTER':
-                row = self.get_row_by_turn(values)
-                word = self.build_word_by_5chars(row)
+                # 入力値を5文字の英単語に
+                word = self.get_word_by_5chars(values=values)
+
                 # 5文字入力されているかの確認
                 if len(word) != 5:
                     continue
 
                 # 入力値が単語リストに存在しなかったら次にいけない
-                if not self.wordle.is_word_in_word_list(word):
-                    self.frontend.popup_does_not_exist(word)
+                if not self.wordle.is_word_in_word_list(word=word):
+                    self.frontend.popup_does_not_exist(word=word)
                     continue
-                # widgetの更新
-                self.update_widget(row)
+
+                # widgetの背景を更新
+                self.update_widget_bg_color(values=values)
 
                 # wordが正解していたらゲーム終了
-                if word == self.wordle.answer:
+                if self.wordle.is_word_collect(word=word):
                     res = self.frontend.popup_congratulation()
                     if res == 'OK':
                         self.refresh_game()
@@ -205,15 +222,8 @@ class Game:
                         self.frontend.popup_see_you_later()
                         break
 
-                # ターンを繰り上げる
-                self.count_up_turn()
-                # 入力可能行の色を切り替える
-                self.update_active_row_mark_by_turn()
-                # 次の行を入力可能にする
-                row = self.get_row_by_turn(values)
-                for key in row.keys():
-                    self.window[key].Update(disabled=False)
-                self.window[f'r{self.turn}c1'].set_focus()
+                # 次のターンに移動
+                self.goto_next_turn(values=values)
 
 
 def job():

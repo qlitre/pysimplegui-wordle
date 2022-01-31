@@ -16,7 +16,7 @@ class Wordle:
         index = random.randrange(start=0, stop=max_index)
         self.answer = self.word_list[index]
 
-    def is_word_in_word_list(self, word):
+    def is_word_in_word_list(self, word: str):
         """単語がword listの中に存在していたらTrue"""
         if word in self.word_list:
             return True

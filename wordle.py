@@ -26,14 +26,54 @@ class Wordle:
         """
         return word == self.answer
 
-    def is_char_in_answer(self, char: str):
-        """
-        英語一文字が答えに含まれていたらTrue
-        """
-        return char in self.answer
+    @staticmethod
+    def dict_with_position(word):
+        d = {}
+        for pos, c in enumerate(word, 1):
+            d[pos] = c
+        return d
 
-    def is_char_right_position(self, char: str, pos: int):
+    def get_hint(self, guess):
         """
-        英語一文字が答えと照らし合わせて位置が合っていたらTrue
+        入力値からヒントを返す
+        本家に合わせて、
+        答え ULTRA
+        入力 MAMMA
+        というような場合に2文字目のAを灰色にするように変更
+        TODO もっといいやり方
         """
-        return self.answer[pos] == char
+        # {1:char,2:char...}という辞書を作る
+        answer = self.dict_with_position(self.answer)
+        guess = self.dict_with_position(guess)
+
+        hint = []
+
+        # 緑を確認
+        for pos, char in guess.items():
+            if answer[pos] == char:
+                hint.append({'pos': pos, 'char': char, 'hint': 'green'})
+
+                # ヒットしたら答えと入力を空文字にする
+                answer[pos] = ''
+                guess[pos] = ''
+
+        # 黄色を確認
+        for pos, char in guess.items():
+            if not char:
+                continue
+            if char in answer.values():
+                hint.append({'pos': pos, 'char': char, 'hint': 'orange'})
+                # 同じく空文字にする
+                guess[pos] = ''
+                for k, v in answer.items():
+                    if v == char:
+                        answer[k] = ''
+
+        # 残ったのは灰色
+        for pos, char in guess.items():
+            if not char:
+                continue
+            hint.append({'pos': pos, 'char': char, 'hint': 'gray'})
+
+        hint.sort(key=lambda x: x['pos'])
+        return hint

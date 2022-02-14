@@ -84,28 +84,29 @@ class Game:
             key = f'row{row_num}'
             self.window[key].update(text_color=color)
 
-    def update_widget_bg_color(self, values: dict):
+    def update_widget_bg_color(self, guess: str):
         """答えが入力された後のウィジェットの色を変える処理"""
-        row = self.filter_values_by_turn(values)
-        for i, char in enumerate(row.values()):
-            col_num = i + 1
-            input_key = f'r{self.turn}c{col_num}'
-            pos = i
-            if self.wordle.is_char_right_position(char=char,
-                                                  pos=pos):
-                bg_color = 'green'
-            elif self.wordle.is_char_in_answer(char):
-                bg_color = 'orange'
-            else:
-                bg_color = 'gray'
+        response = self.wordle.get_hint(guess)
+        for r in response:
+            pos = r['pos']
+            input_key = f'r{self.turn}c{pos}'
+            bg_color = r['hint']
 
+            # 入力ボックスの色の上書き
             self.window[input_key].Update(text_color='white',
                                           background_color=bg_color)
-
-            # キーボードは既にgreenのものが上書きされないようにする
+            # ボタンの色の上書き
+            char = r['char']
             c = self.window[char].ButtonColor
-            if 'green' not in c:
-                self.window[char].Update(button_color=('white', bg_color))
+
+            # 既に緑は上書きされないように
+            if 'green' in c:
+                continue
+
+            # 既にオレンジのボタンが灰色に上書きされないように
+            if 'orange' in c and bg_color == 'gray':
+                continue
+            self.window[char].Update(button_color=('white', bg_color))
 
     def goto_next_turn(self, values: dict):
         """次のターンに移行"""
@@ -200,7 +201,7 @@ class Game:
                     continue
 
                 # widgetの背景を更新
-                self.update_widget_bg_color(values=values)
+                self.update_widget_bg_color(guess=word)
 
                 # wordが正解していたらゲーム終了
                 if self.wordle.is_word_collect(word=word):

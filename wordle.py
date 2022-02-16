@@ -16,24 +16,24 @@ class Wordle:
         index = random.randrange(start=0, stop=max_index)
         self.answer = self.word_list[index]
 
-    def is_word_in_word_list(self, word: str):
+    def is_word_in_word_list(self, guess: str):
         """単語がword listの中に存在していたらTrue"""
-        return word in self.word_list
+        return guess in self.word_list
 
-    def is_word_collect(self, word: str):
+    def is_word_collect(self, guess: str):
         """
         5文字の単語が答えに合っていればTrue
         """
-        return word == self.answer
+        return guess == self.answer
 
     @staticmethod
-    def dict_with_position(word):
+    def dict_with_position(guess: str):
         d = {}
-        for pos, c in enumerate(word, 1):
+        for pos, c in enumerate(guess, 1):
             d[pos] = c
         return d
 
-    def get_hint(self, guess):
+    def get_hint(self, guess_w_pos):
         """
         入力値からヒントを返す
         本家に合わせて、
@@ -43,37 +43,38 @@ class Wordle:
         TODO もっといいやり方
         """
         # {1:char,2:char...}という辞書を作る
-        answer = self.dict_with_position(self.answer)
-        guess = self.dict_with_position(guess)
+        answer_w_pos = self.dict_with_position(self.answer)
+        guess_w_pos = self.dict_with_position(guess_w_pos)
 
-        hint = []
+        hints = []
 
         # 緑を確認
-        for pos, char in guess.items():
-            if answer[pos] == char:
-                hint.append({'pos': pos, 'char': char, 'hint': 'green'})
+        for pos, char in guess_w_pos.items():
+            if answer_w_pos[pos] == char:
+                hints.append({'pos': pos, 'char': char, 'hint': 'green'})
 
                 # ヒットしたら答えと入力を空文字にする
-                answer[pos] = ''
-                guess[pos] = ''
+                answer_w_pos[pos] = ''
+                guess_w_pos[pos] = ''
 
         # 黄色を確認
-        for pos, char in guess.items():
+        for pos, char in guess_w_pos.items():
             if not char:
                 continue
-            if char in answer.values():
-                hint.append({'pos': pos, 'char': char, 'hint': 'orange'})
+            if char in answer_w_pos.values():
+                hints.append({'pos': pos, 'char': char, 'hint': 'orange'})
                 # 同じく空文字にする
-                guess[pos] = ''
-                for k, v in answer.items():
+                guess_w_pos[pos] = ''
+                for k, v in answer_w_pos.items():
                     if v == char:
-                        answer[k] = ''
+                        answer_w_pos[k] = ''
+                        break
 
         # 残ったのは灰色
-        for pos, char in guess.items():
+        for pos, char in guess_w_pos.items():
             if not char:
                 continue
-            hint.append({'pos': pos, 'char': char, 'hint': 'gray'})
+            hints.append({'pos': pos, 'char': char, 'hint': 'gray'})
 
-        hint.sort(key=lambda x: x['pos'])
-        return hint
+        hints.sort(key=lambda x: x['pos'])
+        return hints

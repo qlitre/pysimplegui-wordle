@@ -13,7 +13,6 @@ class Game:
         self.frontend = GuiFrontEnd()
         self.window = self.frontend.window()
         self.wordle = Wordle(word_list)
-        # 入力可能行の制御
         self.turn = 1
 
     @staticmethod
@@ -47,7 +46,6 @@ class Game:
         """次のキーにフォーカスする"""
         row_num = int(key[1])
         col_num = int(key[-1])
-        # 最後の場合は最初に戻る
         if col_num == 5:
             next_key = f'r{row_num}c1'
         else:
@@ -58,7 +56,6 @@ class Game:
         """前のフォーカスのキーを返す"""
         row_num = int(key[1])
         col_num = int(key[-1])
-        # 最初の場合は最後に送る
         if col_num == 1:
             prev_key = f'r{row_num}c5'
         else:
@@ -92,10 +89,10 @@ class Game:
             input_key = f'r{self.turn}c{pos}'
             bg_color = r['hint']
 
-            # 入力ボックスの色の上書き
+            # 入力ボックス
             self.window[input_key].Update(text_color='white',
                                           background_color=bg_color)
-            # ボタンの色の上書き
+            # キーボードボタン
             char = r['char']
             c = self.window[char].ButtonColor
 
@@ -131,20 +128,14 @@ class Game:
         for key in self.get_keyboard_key():
             self.window[key].update(button_color=self.frontend.keyboard_btn_color)
 
-        # リフレッシュ
         self.window.refresh()
-        # 答えを新しくセット
         self.wordle.set_answer()
-        # ターンを戻す
         self.turn = 1
-        # 入力可能行マークを更新
         self.update_active_row_mark_color()
-        # フォーカスを一番最初に
         self.window['r1c1'].SetFocus()
 
     def start_game(self):
         """ゲームスタート"""
-        # wordleに答えをセット
         self.wordle.set_answer()
         keyboards_events = list(self.get_keyboard_key())
         input_box_event = list(self.get_input_widget_key())
@@ -155,10 +146,8 @@ class Game:
             if event == sg.WIN_CLOSED:
                 break
 
-            # inputボックスのフォーカスされているマス
             focus_input = self.window.find_element_with_focus()
 
-            # 小文字で入力された場合、大文字に変換
             if event in input_box_event:
                 char = values[event]
                 self.window[event].update(char.upper())
@@ -167,44 +156,37 @@ class Game:
                 # 違うターンのマスは入力できない
                 if f'r{self.turn}' not in focus_input.Key:
                     continue
-
                 focus_input.update(event)
                 self.set_focus_next(key=focus_input.Key)
 
-            # フォーカスされているマスを消去
             if event == 'BACK':
                 focus_input.update('')
 
-            # 前のマスに移動
             if event == 'PREV':
                 self.set_focus_prev(key=focus_input.Key)
 
-            # 次のマスに移動
             if event == 'NEXT':
                 self.set_focus_next(key=focus_input.Key)
 
-            # 入力されている行をクリア
             if event == 'CLEAR':
                 self.clear_row(values)
 
             if event == 'ENTER':
-                # 入力値を5文字の英単語に
-                word = self.get_word_by_5chars(values=values)
+                guess = self.get_word_by_5chars(values=values)
 
-                # 5文字入力されているかの確認
-                if len(word) != 5:
+                if len(guess) != 5:
                     continue
 
                 # 入力値が単語リストに存在しなかったら次にいけない
-                if not self.wordle.is_word_in_word_list(word=word):
-                    self.frontend.popup_does_not_exist(word=word)
+                if not self.wordle.is_word_in_word_list(guess=guess):
+                    self.frontend.popup_does_not_exist(word=guess)
                     continue
 
                 # widgetの背景を更新
-                self.update_widget_bg_color(guess=word)
+                self.update_widget_bg_color(guess=guess)
 
-                # wordが正解していたらゲーム終了
-                if self.wordle.is_word_collect(word=word):
+                # wordが正解していたらゲームクリア
+                if self.wordle.is_word_collect(guess=guess):
                     res = self.frontend.popup_congratulation()
                     if res == 'OK':
                         self.refresh_game()
@@ -223,15 +205,12 @@ class Game:
                         self.frontend.popup_see_you_later()
                         break
 
-                # 次のターンに移動
                 self.goto_next_turn(values=values)
 
 
 def job():
-    # 単語リストを取得
     word_list = words.get_word_list()
     game = Game(word_list)
-    # ゲーム開始
     game.start_game()
 
 
